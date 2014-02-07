@@ -11,7 +11,7 @@ Le fichier contenant la table d'adresses virtuelles doit préalablement être d�
 
 Pour une aide complète sur les options supportées, installez le script et lancez l'aide :
 
-    ./ldap2postfixmap.sh help
+    ./Ldap2PostfixMap.sh help
 
 
 Bug report
@@ -25,8 +25,8 @@ Installation
 
 Pour installer cet outil, depuis votre terminal :
 
-	git clone https://github.com/yvangodard/ldap2postfixmap.git ; 
-	sudo chmod -R 750 ldap2postfixmap
+	git clone https://github.com/yvangodard/Ldap2PostfixMap.git ; 
+	sudo chmod -R 750 Ldap2PostfixMap
 
 
 License
