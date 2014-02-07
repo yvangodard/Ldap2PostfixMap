@@ -14,7 +14,7 @@
 #             Under Licence                #
 #     Creative Commons 4.0 BY NC SA        #
 #                                          #
-#          http://goo.gl/lriKvn            #
+#          http://goo.gl/9FauYh            #
 #                                          #
 #------------------------------------------#
 
