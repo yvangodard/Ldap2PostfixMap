@@ -220,7 +220,7 @@ fi
 [[ ${LDAPGROUP_OBJECTCLASS} != "allusers" ]] && [[ ${LDAPGROUP} = "" ]] && error "Parameter '-t ${LDAPGROUP_OBJECTCLASS}' is not used but -g is empty.\n-g  must be filled with group name."
 
 # Verification of LDAP_SERVER_URL parameter
-[[ ${LDAPGROUP_OBJECTCLASS} = "" ]] && echo -e "You used option '-s' but you have not entered any LDAP url. Wi'll try to continue with url 'ldap://127.0.0.1'" && LDAP_SERVER_URL="ldap://127.0.0.1"
+[[ ${LDAP_SERVER_URL} = "" ]] && echo -e "You used option '-s' but you have not entered any LDAP url. Wi'll try to continue with url 'ldap://127.0.0.1'" && LDAP_SERVER_URL="ldap://127.0.0.1"
 
 # LDAP connection test
 echo -e "\nConnecting LDAP at $LDAP_SERVER_URL ..."
