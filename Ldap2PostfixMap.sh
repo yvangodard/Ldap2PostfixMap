@@ -90,8 +90,6 @@ error () {
 }
 
 alldone () {
-	# Remove temp files
-
 	# Redirect standard outpout
 	exec 1>&6 6>&-
 	# Logging if needed 
@@ -100,6 +98,7 @@ alldone () {
 	[ $LOG_ACTIVE -ne 1 ] && cat $LOG_TEMP
 	[ $EMAIL_LEVEL -ne 0 ] && [ $1 -ne 0 ] && cat $LOG_TEMP | mail -s "[ERROR : ldap2postfixmap.sh] on $(hostname)" ${EMAIL_ADDRESS}
 	[ $EMAIL_LEVEL -eq 2 ] && [ $1 -eq 0 ] && cat $LOG_TEMP | mail -s "[OK : ldap2postfixmap.sh] on $(hostname)" ${EMAIL_ADDRESS}
+	# Remove temp files
 	rm -R /tmp/ldap2postfixmap*
 	exit ${1}
 }
