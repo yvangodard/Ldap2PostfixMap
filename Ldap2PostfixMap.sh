@@ -49,7 +49,7 @@ help () {
 	echo -e "$VERSION\n"
 	echo -e "This tool is designed to create/update a Postifx virtual map with addresses from a LDAP group or alls users on LDAP."
 	echo -e "It works both with LDAP groups defined by objectClass posixGroup or groupOfNames."
-	echo -e "The domain name of virtual addresses must be defined in /etc/postfix/main.cf as (i.e. as 'virtual_alias_domain')"
+	echo -e "The domain name of virtual addresses must be defined in /etc/postfix/main.cf as (e.g. as 'virtual_alias_domain')"
 	echo -e "and the Postfix map filename must be defined as 'virtual_alias_maps' in /etc/postfix/main.cf."
 	echo -e "\nDisclamer:"
 	echo -e "This tool is provide without any support and guarantee."
@@ -61,24 +61,24 @@ help () {
 	echo -e "                     [-D <main domain>] [-e <email report option>] [-E <email address>] [-j <log file>]"
 	echo -e "\n\t-h:                             prints this help then exit"
 	echo -e "\nMandatory options:"
-	echo -e "\t-d <base namespace>:              the base DN for each LDAP entry (i.e.: 'dc=server,dc=office,dc=com')"
-	echo -e "\t-f <map filename>:                the full name of Postfix map filename (i.e.: '/etc/postfix/virtual_domain1')"
-	echo -e "\t-v <virtual domain relayed>:      the domain that must be relayed with or without '@' (i.e.: '@myvirtualdomain.com' or 'my.virtual_domain.com')"
+	echo -e "\t-d <base namespace>:              the base DN for each LDAP entry (e.g.: 'dc=server,dc=office,dc=com')"
+	echo -e "\t-f <map filename>:                the full name of Postfix map filename (e.g.: '/etc/postfix/virtual_domain1')"
+	echo -e "\t-v <virtual domain relayed>:      the domain that must be relayed with or without '@' (e.g.: '@myvirtualdomain.com' or 'my.virtual_domain.com')"
 	echo -e "\nOptional options:"
 	echo -e "\t-s <LDAP server>:                 the LDAP server LDAP_SERVER_URL (default: '${LDAP_SERVER_URL}')"
-	echo -e "\t-u <relative DN of user banch>:   the relative DN of the LDAP branch that contains the users (i.e.: 'cn=allusers', default: '${DN_USER_BRANCH}')"
+	echo -e "\t-u <relative DN of user banch>:   the relative DN of the LDAP branch that contains the users (e.g.: 'cn=allusers', default: '${DN_USER_BRANCH}')"
 	echo -e "\t-t <LDAP group objectClass>:      the type of group you want to sync, must be 'posixGroup' or 'groupOfNames',"
 	echo -e "\t                                  if unset, all users in LDAP user branch will be treated."	
-	echo -e "\t-g <relative DN of LDAP group>:   the relative DN of the LDAP group to sync to Mailman list (i.e.: 'cn=mygroup,cn=groups' or 'cn=mygroup,ou=lists'),"
+	echo -e "\t-g <relative DN of LDAP group>:   the relative DN of the LDAP group to sync to Mailman list (e.g.: 'cn=mygroup,cn=groups' or 'cn=mygroup,ou=lists'),"
 	echo -e "\t                                  must be filled if '-t' is used. "
-	echo -e "\t-a <LDAP admin UID>:              LDAP administrator UID, if bind is needed to access LDAP (i.e.: 'diradmin')"
+	echo -e "\t-a <LDAP admin UID>:              LDAP administrator UID, if bind is needed to access LDAP (e.g.: 'diradmin')"
 	echo -e "\t-p <LDAP admin password>:         the password of the LDAP administrator (asked if missing)"
 	echo -e "\t-c <postmap command>:             the full name of 'postmap' command (default: '${POSTMAP_COMMAND}')"
-	echo -e "\t-D <main domain>:                 main domain to map to if the user has multiple email addresses registered in the LDAP, with or without '@' (i.e.: 'myrealdoamain.fr')"
+	echo -e "\t-D <main domain>:                 main domain to map to if the user has multiple email addresses registered in the LDAP, with or without '@' (e.g.: 'myrealdoamain.fr')"
 	echo -e "\t-e <email report option>:         settings for sending a report by email, must be 'onerror', 'forcemail' or 'nomail' (default: '${EMAIL_REPORT}')"
 	echo -e "\t-E <email address>:               email address to send the report (must be filled if '-e forcemail' or '-e onerror' options is used)"
 	echo -e "\t-j <log file>:                    enables logging instead of standard output. Specify an argument for the full path to the log file"
-	echo -e "\t                                  (i.e.: '${LOG}') or use 'default' (${LOG})"
+	echo -e "\t                                  (e.g.: '${LOG}') or use 'default' (${LOG})"
 	exit 0
 }
 
@@ -226,7 +226,6 @@ echo -e "\nConnecting LDAP at $LDAP_SERVER_URL ..."
 
 [[ ${WITH_LDAP_BIND} = "yes" ]] && LDAP_COMMAND_BEGIN="ldapsearch -LLL -H ${LDAP_SERVER_URL} -D uid=${LDAPADMIN_UID},${DN_USER_BRANCH},${DNBASE} -w ${LDAPADMIN_PASS}"
 [[ ${WITH_LDAP_BIND} = "no" ]] && LDAP_COMMAND_BEGIN="ldapsearch -LLL -H ${LDAP_SERVER_URL} -x"
-
 
 ${LDAP_COMMAND_BEGIN} -b ${DN_USER_BRANCH},${DNBASE} > /dev/null 2>&1
 if [ $? -ne 0 ]
