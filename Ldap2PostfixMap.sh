@@ -305,8 +305,7 @@ do
 done
 
 OLDIFS=$IFS; IFS=$'\n'
-if [[ ${DUPLICATED_EMAILS} -eq 1 ]]; then
-	DUPLICATED_EMAILS_INLINE=$(cat ${DUPLICATED_EMAILS} | sort -d -f -b | perl -p -e 's/\n/ /g')
+[[ ${DUPLICATED_EMAILS} -eq 1 ]] && DUPLICATED_EMAILS_INLINE=$(cat ${DUPLICATED_EMAILS} | sort -d -f -b | perl -p -e 's/\n/ /g')
 IFS=$OLDIFS
 
 if [[ -z $(cat ${VIRTUAL_MAP_FILE_NEW}) ]]; then
