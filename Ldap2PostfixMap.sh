@@ -304,7 +304,7 @@ do
     fi
 done
 
-[[ ${DUPLICATED_EMAILS} -eq "1" ]] && DUPLICATED_EMAILS_INLINE=$(cat ${DUPLICATED_EMAILS} | sort -d -f -b | perl -p -e 's/\n/ /g')
+[[ ${DUPLICATED_EMAILS} -eq "1" ]] && DUPLICATED_EMAILS_INLINE=$(cat ${LIST_DUPLICATED_EMAILS} | sort -d -f -b | perl -p -e 's/\n/ /g')
 
 if [[ -z $(cat ${VIRTUAL_MAP_FILE_NEW}) ]]; then
 	echo -e "\n-> Nothing to import in ${VIRTUAL_MAP_FILE}"
@@ -322,7 +322,7 @@ else
 	else
 		echo -e "\n-> Postmap OK"
 	fi
-	[[ ${DUPLICATED_EMAILS} -eq 1 ]] && error 5 "Problem with LDAP email entries.\nA virtual email address can only be used one time in a postfix virtual map.\nHave a look to these emails: $DUPLICATED_EMAILS_INLINE !"
+	[[ ${DUPLICATED_EMAILS} -eq 1 ]] && error 5 "Problem with LDAP email entries.\nA virtual email address can only be used one time in a postfix virtual map.\nHave a look to these emails: ${DUPLICATED_EMAILS_INLINE}!"
 fi
 
 alldone 0
