@@ -296,7 +296,7 @@ do
 		    			echo "# User ${USER},${DN_USER_BRANCH},${DNBASE}" >> ${VIRTUAL_MAP_FILE_NEW}
 		    			echo "# ... this email ${VIRTUAL_EMAIL_ADDRESS} is already used in postfix map." >> ${VIRTUAL_MAP_FILE_NEW}
 		    			echo "# ... in order to avoid postmap crashes, we skip this user." >> ${VIRTUAL_MAP_FILE_NEW}
-		    			echo -e "\t!!!${VIRTUAL_EMAIL_ADDRESS} is already used in postfix map!!!" 
+		    			echo -e "\t!!! ${VIRTUAL_EMAIL_ADDRESS} is already used in postfix map !!!" 
 		    		fi
 		    	done
     		fi
@@ -322,7 +322,7 @@ else
 	else
 		echo -e "\n-> Postmap OK"
 	fi
-	[[ ${DUPLICATED_EMAILS} -eq 1 ]] && error 5 "Problem with LDAP email entries.\nAn virtual email address can only be used one time in a postfix virtual map.\nHave a look to these emails: ${DUPLICATED_EMAILS_INLINE}!"
+	[[ ${DUPLICATED_EMAILS} -eq 1 ]] && error 5 "Problem with LDAP email entries.\nA virtual email address can only be used one time in a postfix virtual map.\nHave a look to these emails: $DUPLICATED_EMAILS_INLINE !"
 fi
 
 alldone 0
