@@ -10,7 +10,7 @@
 #              Yvan Godard                 #
 #          godardyvan@gmail.com            #
 #                                          #
-#     Version 0.1 -- january, 28 2014      #
+#        Version 0.2 -- may, 29 2015       #
 #             Under Licence                #
 #     Creative Commons 4.0 BY NC SA        #
 #                                          #
@@ -19,7 +19,7 @@
 #------------------------------------------#
 
 # Variables initialisation
-VERSION="Ldap2PostfixMap v0.1 - 2013, Yvan Godard [godardyvan@gmail.com]"
+VERSION="Ldap2PostfixMap v0.2 - 2013, Yvan Godard [godardyvan@gmail.com]"
 help="no"
 SCRIPT_DIR=$(dirname $0)
 SCRIPT_NAME=$(basename $0)
@@ -44,6 +44,8 @@ LOG_ACTIVE=0
 EMAIL_ADDRESS=""
 LOG_TEMP=$(mktemp /tmp/ldap2postfixmap_log.XXXXX)
 LIST_USERS=$(mktemp /tmp/ldap2postfixmap_users.XXXXX)
+LIST_DUPLICATED_EMAILS=$(mktemp /tmp/ldap2postfixmap_duplicatedemails.XXXXX)
+DUPLICATED_EMAILS=0
 
 help () {
 	echo -e "$VERSION\n"
@@ -84,9 +86,9 @@ help () {
 
 error () {
 	echo -e "\n*** Error ***"
-	echo -e ${1}
+	echo -e "Error ${1}: ${2}"
 	echo -e "\n"${VERSION}
-	alldone 1
+	alldone ${1}
 }
 
 alldone () {
@@ -175,48 +177,40 @@ echo -e "\t-f <map filename>:           ${VIRTUAL_MAP_FILE}"
 echo -e "\t-v <virtual domain relayed>: ${VIRTUAL_DOMAIN_RELAYED}"
 
 # Test of sending email parameter and check the consistency of the parameter email address
-if [[ ${EMAIL_REPORT} = "forcemail" ]]
-	then
+if [[ ${EMAIL_REPORT} = "forcemail" ]]; then
 	EMAIL_LEVEL=2
-	if [[ -z $EMAIL_ADDRESS ]]
-		then
+	if [[ -z $EMAIL_ADDRESS ]]; then
 		echo -e "You used option '-e ${EMAIL_REPORT}' but you have not entered any email info.\n\t-> We continue the process without sending email."
 		EMAIL_LEVEL=0
 	else
 		echo "${EMAIL_ADDRESS}" | grep '^[a-zA-Z0-9._-]*@[a-zA-Z0-9._-]*\.[a-zA-Z0-9._-]*$' > /dev/null 2>&1
-		if [ $? -ne 0 ]
-			then
+		if [[ ${?} -ne 0 ]]; then
     		echo -e "This address '${EMAIL_ADDRESS}' does not seem valid.\n\t-> We continue the process without sending email."
     		EMAIL_LEVEL=0
     	fi
     fi
-elif [[ ${EMAIL_REPORT} = "onerror" ]]
-	then
+elif [[ ${EMAIL_REPORT} = "onerror" ]]; then
 	EMAIL_LEVEL=1
-	if [[ -z $EMAIL_ADDRESS ]]
-		then
+	if [[ -z $EMAIL_ADDRESS ]]; then
 		echo -e "You used option '-e ${EMAIL_REPORT}' but you have not entered any email info.\n\t-> We continue the process without sending email."
 		EMAIL_LEVEL=0
 	else
 		echo "${EMAIL_ADDRESS}" | grep '^[a-zA-Z0-9._-]*@[a-zA-Z0-9._-]*\.[a-zA-Z0-9._-]*$' > /dev/null 2>&1
-		if [ $? -ne 0 ]
-			then	
+		if [[ ${?} -ne 0 ]]; then	
     		echo -e "This address '${EMAIL_ADDRESS}' does not seem valid.\n\t-> We continue the process without sending email."
     		EMAIL_LEVEL=0
     	fi
     fi
-elif [[ ${EMAIL_REPORT} != "nomail" ]]
-	then
+elif [[ ${EMAIL_REPORT} != "nomail" ]]; then
 	echo -e "\nOption '-e ${EMAIL_REPORT}' is not valid (must be: 'onerror', 'forcemail' or 'nomail').\n\t-> We continue the process without sending email."
 	EMAIL_LEVEL=0
-elif [[ ${EMAIL_REPORT} = "nomail" ]]
-	then
+elif [[ ${EMAIL_REPORT} = "nomail" ]]; then
 	EMAIL_LEVEL=0
 fi
 
 # Verification of LDAPGROUP_OBJECTCLASS parameter
-[[ ${LDAPGROUP_OBJECTCLASS} != "allusers" ]] && [[ ${LDAPGROUP_OBJECTCLASS} != "posixGroup" ]] && [[ ${LDAPGROUP_OBJECTCLASS} != "groupOfNames" ]] && error "Parameter '-t ${LDAPGROUP_OBJECTCLASS}' is not correct.\n-t must be 'posixGroup' or 'groupOfNames'"
-[[ ${LDAPGROUP_OBJECTCLASS} != "allusers" ]] && [[ ${LDAPGROUP} = "" ]] && error "Parameter '-t ${LDAPGROUP_OBJECTCLASS}' is not used but -g is empty.\n-g  must be filled with group name."
+[[ ${LDAPGROUP_OBJECTCLASS} != "allusers" ]] && [[ ${LDAPGROUP_OBJECTCLASS} != "posixGroup" ]] && [[ ${LDAPGROUP_OBJECTCLASS} != "groupOfNames" ]] && error 1 "Parameter '-t ${LDAPGROUP_OBJECTCLASS}' is not correct.\n-t must be 'posixGroup' or 'groupOfNames'"
+[[ ${LDAPGROUP_OBJECTCLASS} != "allusers" ]] && [[ ${LDAPGROUP} = "" ]] && error 1 "Parameter '-t ${LDAPGROUP_OBJECTCLASS}' is not used but -g is empty.\n-g  must be filled with group name."
 
 # Verification of LDAP_SERVER_URL parameter
 [[ ${LDAP_SERVER_URL} = "" ]] && echo -e "You used option '-s' but you have not entered any LDAP url. Wi'll try to continue with url 'ldap://127.0.0.1'" && LDAP_SERVER_URL="ldap://127.0.0.1"
@@ -228,35 +222,28 @@ echo -e "\nConnecting LDAP at $LDAP_SERVER_URL ..."
 [[ ${WITH_LDAP_BIND} = "no" ]] && LDAP_COMMAND_BEGIN="ldapsearch -LLL -H ${LDAP_SERVER_URL} -x"
 
 ${LDAP_COMMAND_BEGIN} -b ${DN_USER_BRANCH},${DNBASE} > /dev/null 2>&1
-if [ $? -ne 0 ]
-	then 
-	error "Error connecting to LDAP server.\nPlease verify your LDAP_SERVER_URL and, if needed to bind LDAP, user and pass."
+if [[ ${?} -ne 0 ]; then 
+	error 2 "Error connecting to LDAP server.\nPlease verify your LDAP_SERVER_URL and, if needed to bind LDAP, user and pass."
 else
 	echo "OK!"
 fi
 
 # Test if user list is not empty
-if [[ ${LDAPGROUP_OBJECTCLASS} = "groupOfNames" ]] 
-	then
-	if [[ -z $(${LDAP_COMMAND_BEGIN} -b ${LDAPGROUP},${DNBASE} member | grep member: | awk '{print $2}' | awk -F',' '{print $1}') ]] 
-		then 
-		error "User list on LDAP group is empty!"
+if [[ ${LDAPGROUP_OBJECTCLASS} = "groupOfNames" ]]; then
+	if [[ -z $(${LDAP_COMMAND_BEGIN} -b ${LDAPGROUP},${DNBASE} member | grep member: | awk '{print $2}' | awk -F',' '{print $1}') ]]; then 
+		error 3 "User list on LDAP group is empty!"
 	else
 		${LDAP_COMMAND_BEGIN} -b ${LDAPGROUP},${DNBASE} member | grep member: | awk '{print $2}' | awk -F',' '{print $1}' >> $LIST_USERS
 	fi
-elif [[ ${LDAPGROUP_OBJECTCLASS} = "posixGroup" ]]
-	then
-	if [[ -z $(${LDAP_COMMAND_BEGIN} -b ${LDAPGROUP},${DNBASE} memberUid | grep memberUid: | awk '{print $2}' | sed -e 's/^./uid=&/g') ]] 
-		then 
-		error "User list on LDAP group is empty"
+elif [[ ${LDAPGROUP_OBJECTCLASS} = "posixGroup" ]]; then
+	if [[ -z $(${LDAP_COMMAND_BEGIN} -b ${LDAPGROUP},${DNBASE} memberUid | grep memberUid: | awk '{print $2}' | sed -e 's/^./uid=&/g') ]]; then 
+		error 3 "User list on LDAP group is empty!"
 	else
 		${LDAP_COMMAND_BEGIN} -b ${LDAPGROUP},${DNBASE} memberUid | grep memberUid: | awk '{print $2}' | sed -e 's/^./uid=&/g' >> $LIST_USERS
 	fi
-elif [[ ${LDAPGROUP_OBJECTCLASS} = "allusers" ]]
-	then
-	if [[ -z $(${LDAP_COMMAND_BEGIN} -b ${DN_USER_BRANCH},${DNBASE} uid | grep uid: | awk '{print $2}' | sed -e 's/^./uid=&/g') ]] 
-		then 
-		error "User list on LDAP ${DN_USER_BRANCH},${DNBASE} is empty"
+elif [[ ${LDAPGROUP_OBJECTCLASS} = "allusers" ]]; then
+	if [[ -z $(${LDAP_COMMAND_BEGIN} -b ${DN_USER_BRANCH},${DNBASE} uid | grep uid: | awk '{print $2}' | sed -e 's/^./uid=&/g') ]]; then 
+		error 3 "User list on LDAP ${DN_USER_BRANCH},${DNBASE} is empty"
 	else
 		${LDAP_COMMAND_BEGIN} -b ${DN_USER_BRANCH},${DNBASE} uid | grep uid: | awk '{print $2}' | sed -e 's/^./uid=&/g' >> $LIST_USERS
 	fi
@@ -275,45 +262,54 @@ do
     ${LDAP_COMMAND_BEGIN} -b ${DN_USER_BRANCH},${DNBASE} $USER mail | grep mail: | awk '{print $2}' | grep '.' | sed '/^$/d' | awk '!x[$0]++' >> $EMAILS
     LINES_NUMBER=$(cat ${EMAILS} | grep "." | wc -l) 
     echo -e "\tNumber of lines/emails: ${LINES_NUMBER}"
-    if [ ${LINES_NUMBER} -lt "2" ]
-    	then
+    if [[ ${LINES_NUMBER} -lt "2" ]]; then
     	echo -e "\t-> This user doesn't have enough email addresses registered in LDAP. Skip this user."
-	elif [ ${LINES_NUMBER} -gt "1" ]
-    	then
+	elif [[ ${LINES_NUMBER} -gt "1" ]]; then
     	cat ${EMAILS} | grep ${VIRTUAL_DOMAIN_RELAYED} > /dev/null 2>&1
-		if [ $? -ne 0 ]
-    		then
+		if [[ ${?} -ne 0 ]]; then
     		echo -e "\t-> No email containing the virtual domain defined in LDAP. Skip this user."		
     	else
     		cat ${EMAILS} | grep -v ${VIRTUAL_DOMAIN_RELAYED} >> ${OTHER_EMAILS}
-    		if [[ ${MAIN_DOMAIN_DEFINED} = "no" ]] 
-    			then
+    		if [[ ${MAIN_DOMAIN_DEFINED} = "no" ]]; then
     			PRINCIPAL_EMAIL=$(cat ${OTHER_EMAILS} | head -n 1)
     		else
-    			if [[ -z $(cat ${OTHER_EMAILS} | grep ${MAIN_DOMAIN}) ]] 
-    				then
+    			if [[ -z $(cat ${OTHER_EMAILS} | grep ${MAIN_DOMAIN}) ]]; then
     				PRINCIPAL_EMAIL=$(cat ${OTHER_EMAILS} | head -n 1)
     			else
     				PRINCIPAL_EMAIL=$(cat ${OTHER_EMAILS} | grep ${MAIN_DOMAIN} | head -n 1)
 				fi    			
     		fi
-    		if [[ -z ${PRINCIPAL_EMAIL} ]]
-    			then
+    		if [[ -z ${PRINCIPAL_EMAIL} ]]; then
     			echo -e "\t-> No email destination found not containing the virtual domain. Skip this user."
     		else
-    			echo "# User ${USER},${DN_USER_BRANCH},${DNBASE}" >> ${VIRTUAL_MAP_FILE_NEW} 
+    			# Add test to avoid duplicate emails in postfix map table
     			for VIRTUAL_EMAIL_ADDRESS in $(cat ${EMAILS} | grep ${VIRTUAL_DOMAIN_RELAYED})
-    			do
-    				echo -e "\t${VIRTUAL_EMAIL_ADDRESS} > ${PRINCIPAL_EMAIL}" 				
-    				echo "${VIRTUAL_EMAIL_ADDRESS} ${PRINCIPAL_EMAIL}" >> ${VIRTUAL_MAP_FILE_NEW}
-    			done
+	    		do
+					cat ${VIRTUAL_MAP_FILE_NEW} | grep ${VIRTUAL_EMAIL_ADDRESS} > /dev/null 2>&1
+					if [[ ${?} -ne 0 ]]; then
+		    			echo "# User ${USER},${DN_USER_BRANCH},${DNBASE}" >> ${VIRTUAL_MAP_FILE_NEW} 				
+		    			echo "${VIRTUAL_EMAIL_ADDRESS} ${PRINCIPAL_EMAIL}" >> ${VIRTUAL_MAP_FILE_NEW}
+		    			echo -e "\t${VIRTUAL_EMAIL_ADDRESS} > ${PRINCIPAL_EMAIL}" 
+		    		elif [[ ${?} -eq 0 ]]; then
+		    			echo "${VIRTUAL_EMAIL_ADDRESS}" >> ${LIST_DUPLICATED_EMAILS}
+		    			DUPLICATED_EMAILS=1
+		    			echo "# User ${USER},${DN_USER_BRANCH},${DNBASE}" >> ${VIRTUAL_MAP_FILE_NEW}
+		    			echo "# ... this email ${VIRTUAL_EMAIL_ADDRESS} is already used in postfix map." >> ${VIRTUAL_MAP_FILE_NEW}
+		    			echo "# ... in order to avoid postmap crashes, we skip this user." >> ${VIRTUAL_MAP_FILE_NEW}
+		    			echo -e "\t!!!${VIRTUAL_EMAIL_ADDRESS} is already used in postfix map!!!" 
+		    		fi
+		    	done
     		fi
     	fi
     fi
 done
 
-if [[ -z $(cat ${VIRTUAL_MAP_FILE_NEW}) ]]
-	then
+OLDIFS=$IFS; IFS=$'\n'
+if [[ ${DUPLICATED_EMAILS} -eq 1 ]]; then
+	DUPLICATED_EMAILS_INLINE=$(cat ${DUPLICATED_EMAILS} | sort -d -f -b | perl -p -e 's/\n/ /g')
+IFS=$OLDIFS
+
+if [[ -z $(cat ${VIRTUAL_MAP_FILE_NEW}) ]]; then
 	echo -e "\n-> Nothing to import in ${VIRTUAL_MAP_FILE}"
 else
 	[[ -f ${VIRTUAL_MAP_FILE} ]] && mv ${VIRTUAL_MAP_FILE} ${VIRTUAL_MAP_FILE}.old
@@ -323,13 +319,13 @@ else
 	echo "" >> ${VIRTUAL_MAP_FILE}
 	cat ${VIRTUAL_MAP_FILE_NEW} >> ${VIRTUAL_MAP_FILE}
 	${POSTMAP_COMMAND} ${VIRTUAL_MAP_FILE}
-	if [ $? -ne 0 ] 
-		then
-		ERROR_MESSAGE=$(echo $?)
-		error "Error while running command: ${POSTMAP_COMMAND} ${VIRTUAL_MAP_FILE}.\n${ERROR_MESSAGE}."
+	if [[ ${?} -ne 0 ]]; then 
+		ERROR_MESSAGE=$(echo ${?})
+		error 4 "Error while running command: ${POSTMAP_COMMAND} ${VIRTUAL_MAP_FILE}.\n${ERROR_MESSAGE}."
 	else
 		echo -e "\n-> Postmap OK"
 	fi
+	[[ ${DUPLICATED_EMAILS} -eq 1 ]] && error 5 "Problem with LDAP email entries.\nAn virtual email address can only be used one time in a postfix virtual map.\nHave a look to these emails: ${DUPLICATED_EMAILS_INLINE}!"
 fi
 
 alldone 0
