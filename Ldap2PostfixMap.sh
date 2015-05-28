@@ -222,7 +222,7 @@ echo -e "\nConnecting LDAP at $LDAP_SERVER_URL ..."
 [[ ${WITH_LDAP_BIND} = "no" ]] && LDAP_COMMAND_BEGIN="ldapsearch -LLL -H ${LDAP_SERVER_URL} -x"
 
 ${LDAP_COMMAND_BEGIN} -b ${DN_USER_BRANCH},${DNBASE} > /dev/null 2>&1
-if [[ ${?} -ne 0 ]; then 
+if [[ ${?} -ne 0 ]]; then 
 	error 2 "Error connecting to LDAP server.\nPlease verify your LDAP_SERVER_URL and, if needed to bind LDAP, user and pass."
 else
 	echo "OK!"
