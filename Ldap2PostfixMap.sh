@@ -304,7 +304,7 @@ do
     fi
 done
 
-[[ ${DUPLICATED_EMAILS} -eq "1" ]] && DUPLICATED_EMAILS_INLINE=$(cat ${LIST_DUPLICATED_EMAILS} | sort -d -f -b | perl -p -e 's/\n/ /g')
+[[ ${DUPLICATED_EMAILS} -eq 1 ]] && DUPLICATED_EMAILS_INLINE=$(cat ${LIST_DUPLICATED_EMAILS} | sort -d -f -b | perl -p -e 's/\n/ /g')
 
 if [[ -z $(cat ${VIRTUAL_MAP_FILE_NEW}) ]]; then
 	echo -e "\n-> Nothing to import in ${VIRTUAL_MAP_FILE}"
