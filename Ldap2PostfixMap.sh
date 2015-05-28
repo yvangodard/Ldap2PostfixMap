@@ -184,7 +184,7 @@ if [[ ${EMAIL_REPORT} = "forcemail" ]]; then
 		EMAIL_LEVEL=0
 	else
 		echo "${EMAIL_ADDRESS}" | grep '^[a-zA-Z0-9._-]*@[a-zA-Z0-9._-]*\.[a-zA-Z0-9._-]*$' > /dev/null 2>&1
-		if [[ ${?} -ne 0 ]]; then
+		if [ $? -ne 0 ]; then
     		echo -e "This address '${EMAIL_ADDRESS}' does not seem valid.\n\t-> We continue the process without sending email."
     		EMAIL_LEVEL=0
     	fi
@@ -196,7 +196,7 @@ elif [[ ${EMAIL_REPORT} = "onerror" ]]; then
 		EMAIL_LEVEL=0
 	else
 		echo "${EMAIL_ADDRESS}" | grep '^[a-zA-Z0-9._-]*@[a-zA-Z0-9._-]*\.[a-zA-Z0-9._-]*$' > /dev/null 2>&1
-		if [[ ${?} -ne 0 ]]; then	
+		if [ $? -ne 0 ]; then	
     		echo -e "This address '${EMAIL_ADDRESS}' does not seem valid.\n\t-> We continue the process without sending email."
     		EMAIL_LEVEL=0
     	fi
@@ -222,7 +222,7 @@ echo -e "\nConnecting LDAP at $LDAP_SERVER_URL ..."
 [[ ${WITH_LDAP_BIND} = "no" ]] && LDAP_COMMAND_BEGIN="ldapsearch -LLL -H ${LDAP_SERVER_URL} -x"
 
 ${LDAP_COMMAND_BEGIN} -b ${DN_USER_BRANCH},${DNBASE} > /dev/null 2>&1
-if [[ ${?} -ne 0 ]]; then 
+if [ $? -ne 0 ]; then 
 	error 2 "Error connecting to LDAP server.\nPlease verify your LDAP_SERVER_URL and, if needed to bind LDAP, user and pass."
 else
 	echo "OK!"
@@ -266,7 +266,7 @@ do
     	echo -e "\t-> This user doesn't have enough email addresses registered in LDAP. Skip this user."
 	elif [[ ${LINES_NUMBER} -gt "1" ]]; then
     	cat ${EMAILS} | grep ${VIRTUAL_DOMAIN_RELAYED} > /dev/null 2>&1
-		if [[ ${?} -ne 0 ]]; then
+		if [ $? -ne 0 ]; then
     		echo -e "\t-> No email containing the virtual domain defined in LDAP. Skip this user."		
     	else
     		cat ${EMAILS} | grep -v ${VIRTUAL_DOMAIN_RELAYED} >> ${OTHER_EMAILS}
@@ -286,13 +286,13 @@ do
     			for VIRTUAL_EMAIL_ADDRESS in $(cat ${EMAILS} | grep ${VIRTUAL_DOMAIN_RELAYED})
 	    		do
 					cat ${VIRTUAL_MAP_FILE_NEW} | grep ${VIRTUAL_EMAIL_ADDRESS} > /dev/null 2>&1
-					if [[ ${?} -ne 0 ]]; then
+					if [ $? -ne 0 ]; then
 		    			echo "# User ${USER},${DN_USER_BRANCH},${DNBASE}" >> ${VIRTUAL_MAP_FILE_NEW} 				
 		    			echo "${VIRTUAL_EMAIL_ADDRESS} ${PRINCIPAL_EMAIL}" >> ${VIRTUAL_MAP_FILE_NEW}
 		    			echo -e "\t${VIRTUAL_EMAIL_ADDRESS} > ${PRINCIPAL_EMAIL}" 
-		    		elif [[ ${?} -eq 0 ]]; then
-		    			echo "${VIRTUAL_EMAIL_ADDRESS}" >> ${LIST_DUPLICATED_EMAILS}
+		    		else
 		    			DUPLICATED_EMAILS=1
+		    			echo "${VIRTUAL_EMAIL_ADDRESS}" >> ${LIST_DUPLICATED_EMAILS}
 		    			echo "# User ${USER},${DN_USER_BRANCH},${DNBASE}" >> ${VIRTUAL_MAP_FILE_NEW}
 		    			echo "# ... this email ${VIRTUAL_EMAIL_ADDRESS} is already used in postfix map." >> ${VIRTUAL_MAP_FILE_NEW}
 		    			echo "# ... in order to avoid postmap crashes, we skip this user." >> ${VIRTUAL_MAP_FILE_NEW}
@@ -304,9 +304,7 @@ do
     fi
 done
 
-OLDIFS=$IFS; IFS=$'\n'
 [[ ${DUPLICATED_EMAILS} -eq 1 ]] && DUPLICATED_EMAILS_INLINE=$(cat ${DUPLICATED_EMAILS} | sort -d -f -b | perl -p -e 's/\n/ /g')
-IFS=$OLDIFS
 
 if [[ -z $(cat ${VIRTUAL_MAP_FILE_NEW}) ]]; then
 	echo -e "\n-> Nothing to import in ${VIRTUAL_MAP_FILE}"
@@ -318,7 +316,7 @@ else
 	echo "" >> ${VIRTUAL_MAP_FILE}
 	cat ${VIRTUAL_MAP_FILE_NEW} >> ${VIRTUAL_MAP_FILE}
 	${POSTMAP_COMMAND} ${VIRTUAL_MAP_FILE}
-	if [[ ${?} -ne 0 ]]; then 
+	if [ $? -ne 0 ]; then 
 		ERROR_MESSAGE=$(echo ${?})
 		error 4 "Error while running command: ${POSTMAP_COMMAND} ${VIRTUAL_MAP_FILE}.\n${ERROR_MESSAGE}."
 	else
